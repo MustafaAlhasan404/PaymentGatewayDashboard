@@ -20,7 +20,7 @@ interface Card {
   cvv: string;
   expiryDate: string;
   cardName: string;
-  balance: number; // Add this line
+  balance: number;
 }
 
 interface Bill {
@@ -37,7 +37,6 @@ interface Bill {
   amount?: number;
 }
 
-
 export default function Home({ billNumber }: HomeProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -50,6 +49,7 @@ export default function Home({ billNumber }: HomeProps) {
   const [bill, setBill] = useState<Bill | null>(null);
   const [transactionStatus, setTransactionStatus] = useState("");
   const [jwt, setJwt] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const searchForBill = useCallback(async (billNumber: string) => {
     if (!billNumber) return;
@@ -133,7 +133,7 @@ export default function Home({ billNumber }: HomeProps) {
       return;
     }
 
-    setLoading(true);
+    setPaymentLoading(true);
     try {
       const response = await axios.post(`${baseUrl}/bill/pay/${bill?.id}`, {
         jwt,
@@ -146,11 +146,12 @@ export default function Home({ billNumber }: HomeProps) {
       });
       decryptData(response.data.payload, aesKey);
       setTransactionStatus("success");
+      setBill(prevBill => prevBill ? { ...prevBill, status: "Paid" } : null);
     } catch (error) {
       alert('Failed to pay bill');
       setTransactionStatus("failure");
     } finally {
-      setLoading(false);
+      setPaymentLoading(false);
     }
   };
 
@@ -289,7 +290,23 @@ export default function Home({ billNumber }: HomeProps) {
                   ) : (
                     <div className="space-y-2 text-sm sm:text-base">
                       {bill.status === "Paid" ? (
-                        <p className="text-xl text-green-600 font-medium sm:text-2xl">Paid Bill</p>
+                        <div className="text-center">
+                          <p className="text-3xl text-green-500 font-bold mb-2">Paid</p>
+                          <svg
+                            className="w-16 h-16 mx-auto text-green-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          <p className="text-xl text-gray-600 mt-2">This bill has been successfully paid.</p>
+                        </div>
                       ) : (
                         <>
                           <p><strong>Bill Number:</strong> {bill.id}</p>
@@ -297,9 +314,16 @@ export default function Home({ billNumber }: HomeProps) {
                           <p><strong>Merchant:</strong> {bill.merchantAccount?.user?.name ?? 'N/A'}</p>
                           <p><strong>Description:</strong> {bill.details}</p>
                           <p><strong>Amount:</strong> ${bill.amount}</p>
-                          <Button onClick={payBill} className="w-full mt-4" disabled={loading}>
-                            {loading ? "Processing..." : "Pay Bill"}
-                          </Button>
+                          {!transactionStatus && (
+                            <Button onClick={payBill} className="w-full mt-4" disabled={paymentLoading}>
+                              {paymentLoading ? (
+                                <span className="flex items-center justify-center">
+                                  Processing
+                                  <span className="ml-2 animate-pulse">...</span>
+                                </span>
+                              ) : "Pay Bill"}
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>
