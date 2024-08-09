@@ -9,7 +9,7 @@ import { generateAesKey, encryptAesKey, encryptData, decryptData } from "../lib/
 import axios from "axios";
 import Image from "next/image";
 
-const baseUrl = "https://fuse-backend-x7mr.onrender.com";
+const baseUrl = "https://3030-quiet-sunset-73461303.in-ws1.runcode.io";
 
 interface HomeProps {
   billNumber?: string;
